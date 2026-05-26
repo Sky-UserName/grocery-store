@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章详情</title>
+    <link rel="stylesheet" href="/mobile/css/mobile.css">
+</head>
+<body class="dark-page">
+    <header class="mobile-header">
+        <button class="back-btn" type="button" onclick="history.back()">‹</button>
+        <span>文章详情</span>
+    </header>
+    <main class="detail-main">
+        <h1 class="detail-title" id="detailTitle"></h1>
+        <div class="tag-row" id="tagRow"></div>
+        <div class="divider"></div>
+        <article class="content-body" id="contentBody"></article>
+    </main>
+    <script src="/mobile/js/mobile.js"></script>
+    <script>
+        const params = new URLSearchParams(location.search);
+        const id = params.get('id');
+
+        (async function init() {
+            const config = await getConfig();
+            if (config.accessPasswordEnabled && !mobileStore.token) {
+                location.href = '/mobile/login.html';
+                return;
+            }
+            const card = await apiGet(`/api/mobile/cards/${id}`);
+            if (!card) return;
+            document.title = card.title;
+            setText('detailTitle', card.title);
+            document.getElementById('tagRow').innerHTML = (card.tags || [])
+                .map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`)
+                .join('');
+            document.getElementById('contentBody').innerHTML = card.contentHtml || '';
+        })();
+    </script>
+</body>
+</html>

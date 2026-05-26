@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+ <head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>文章详情页</title> 
+  <script src="./article_detail/resource_7840410000.js"></script> 
+  <link href="./article_detail/all.min.css" rel="stylesheet"> 
+  <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2B6EF5',
+                        darkBg: '#1A1A2E',
+                        textDark: '#1A1A2E',
+                        textMain: '#333333',
+                        textLight: '#999999',
+                        tagBg: '#E8F0FE',
+                        divider: '#EEEEEE',
+                        contentBg: '#F8F9FA'
+                    },
+                    spacing: {
+                        '44': '44px',
+                    }
+                }
+            }
+        };
+    </script> 
+  <style>
+body {
+            background-color: #1A1A2E;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+  <style>
+    ::-webkit-scrollbar {
+        width: 0px;
+    }
+</style> 
+ </head> 
+ <body class="bg-white"> 
+  <!-- 顶部导航栏 --> 
+  <header class="fixed top-0 left-0 w-full h-44 bg-darkBg shadow-[0_1px_0_rgba(255,255,255,0.05)] z-10"> 
+   <div class="flex items-center h-full px-4"> 
+    <button id="back-btn" type="button" class="flex items-center justify-center w-8 h-8 -ml-2"> <span class="text-xl text-white">←</span> </button> 
+    <div class="flex-1 text-center text-[16px] font-medium text-white">
+      文章详情 
+    </div> 
+    <div class="w-8"></div> 
+   </div> 
+  </header> 
+  <!-- 主内容区 --> 
+  <main class="pt-44 pb-6 px-4 bg-darkBg scrollbar-hide overflow-y-auto"> 
+   <!-- 文章头部区域 --> 
+   <div class="pt-6"> 
+    <h1 class="text-[22px] font-bold text-white leading-[1.4] text-left"> 山东烟台红富士苹果：从田间到餐桌的甜蜜旅程 </h1> 
+    <!-- 标签区域 --> 
+    <div class="flex flex-wrap mt-3 gap-2"> 
+     <span class="text-[12px] bg-tagBg text-primary rounded-[4px] px-2 py-1"> #水果 </span> 
+     <span class="text-[12px] bg-tagBg text-primary rounded-[4px] px-2 py-1"> #产地直供 </span> 
+     <span class="text-[12px] bg-tagBg text-primary rounded-[4px] px-2 py-1"> #健康生活 </span> 
+    </div> 
+    <!-- 分割线 --> 
+    <div class="mt-4 h-px bg-gray-700"></div> 
+    <!-- 文章正文区域 --> 
+    <div class="mt-6"> 
+     <p class="text-[15px] leading-[1.8] text-gray-200 mb-4"> 山东烟台，地处北纬37°黄金水果带，四季分明，光照充足，这里出产的红富士苹果以个大、色艳、味甜、汁多而闻名全国。 </p> 
+     <p class="text-[15px] leading-[1.8] text-gray-200 mb-4"> 独特的丘陵地形和沙质土壤，为苹果树提供了极佳的生长环境。这里昼夜温差大，有利于糖分积累，每一颗苹果都凝聚着大自然的馈赠。果农们坚持传统种植方式，不催熟，不打蜡，让苹果自然生长，保留最纯正的果香和口感。 </p> 
+     <!-- 文章图片 --> 
+     <div class="mb-4"> 
+      <img src="./article_detail/720x480.png" alt="烟台红富士苹果果园实景" class="w-full rounded-lg object-cover"> 
+      <p class="text-[12px] text-gray-400 text-center mt-2">烟台红富士苹果果园实景</p> 
+     </div> 
+     <p class="text-[15px] leading-[1.8] text-gray-200 mb-4"> 从采摘到包装，每一颗苹果都经过严格筛选。只有色泽鲜艳、果形端正、糖度达标的苹果才能进入市场。先进的冷链物流体系，保证苹果从树上摘下后，最短时间内就能送到消费者手中，保持最新鲜的状态。 </p> 
+     <!-- 文章图片 --> 
+     <div class="mb-4"> 
+      <img src="./article_detail/387cffcab176af62cd3eec220f8073a2.png" alt="采摘好的红富士苹果" class="w-full rounded-lg object-cover"> 
+      <p class="text-[12px] text-gray-400 text-center mt-2">刚采摘好的优质红富士苹果</p> 
+     </div> 
+     <p class="text-[15px] leading-[1.8] text-gray-200 mb-4"> 切开一颗成熟的红富士，清脆的声音让人愉悦，果肉洁白细密，果汁丰富，甜中带微酸，口感极佳。富含多种维生素和膳食纤维，每天一颗，健康生活从这里开始。 </p> 
+     <p class="text-[15px] leading-[1.8] text-gray-200 mb-4"> 百年苹果栽培历史，造就了烟台苹果的优良品质。如今，这颗小小的苹果不仅是当地的支柱产业，更是走向全国的名片。从田间到餐桌，每一步都凝聚着果农的辛勤汗水，也承载着人们对美好生活的向往。 </p> 
+     <!-- 文章图片 --> 
+     <div class="mb-4"> 
+      <img src="./article_detail/4eb914729d91ede3e8cad25f35deb1cc.png" alt="切开的红富士苹果" class="w-full rounded-lg object-cover"> 
+      <p class="text-[12px] text-gray-400 text-center mt-2">果肉细腻多汁的红富士切面</p> 
+     </div> 
+     <p class="text-[15px] leading-[1.8] text-gray-200 mb-4"> 如果您也想品尝这份来自渤海湾的甜蜜，不妨试试正宗的烟台红富士，相信那一口清爽甘甜，一定会让您回味无穷。 </p> 
+    </div> 
+   </div> 
+  </main> 
+  <script>
+var pageUuid = "";
+        window.ytHandles = {
+        //浏览器回退功能
+        back: function() {
+            if (window.history && window.history.length > 1) {
+                window.history.back();
+            } else {
+                console.warn('No history to go back');
+            }
+        }
+        };
+window.onload = function(){
+        try {
+          //为#back-btn元素添加点击事件监听器
+          document.getElementById('back-btn').addEventListener('click',function(event){
+             ytHandles.back();
+          })
+        } catch (e) {
+          console.error('Back error:', e);
+        }
+};
+</script>  
+ </body>
+</html>

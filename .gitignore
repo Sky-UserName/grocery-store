@@ -1,0 +1,15 @@
+# 忽略 node_modules（如果有）
+node_modules/
+
+# 忽略临时文件
+*.tmp
+*.log
+.DS_Store
+
+# 忽略 IDE 配置
+.vscode/
+.idea/
+*.swp
+
+# 忽略系统文件
+Thumbs.db

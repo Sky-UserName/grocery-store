@@ -1,0 +1,36 @@
+@page
+@model GroceryStoreSystem.Pages.Admin.ConfigModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "系统配置";
+}
+
+<form method="post" class="card form-card">
+    <div class="card-body row g-3">
+        <div class="col-md-6">
+            <label class="form-label" asp-for="Input.SiteName">店铺名称</label>
+            <input class="form-control" asp-for="Input.SiteName" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" asp-for="Input.SiteSubtitle">副标题</label>
+            <input class="form-control" asp-for="Input.SiteSubtitle" />
+        </div>
+        <div class="col-12">
+            <label class="form-label" asp-for="Input.SiteDescription">说明文案</label>
+            <textarea class="form-control" asp-for="Input.SiteDescription" rows="3"></textarea>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" asp-for="Input.NewAccessPassword">移动端访问密码</label>
+            <input class="form-control" asp-for="Input.NewAccessPassword" type="password" placeholder="留空则不修改" />
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+            <div class="form-check form-switch">
+                <input class="form-check-input" asp-for="Input.AccessPasswordEnabled" />
+                <label class="form-check-label" asp-for="Input.AccessPasswordEnabled">启用全站访问密码</label>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white d-flex justify-content-end">
+        <button class="btn btn-primary" type="submit">保存配置</button>
+    </div>
+</form>
