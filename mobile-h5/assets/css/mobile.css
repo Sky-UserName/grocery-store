@@ -1,0 +1,106 @@
+* { box-sizing: border-box; }
+html { width: 100%; overflow-x: hidden; }
+body { width: 100%; margin: 0; overflow-x: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+button, input, textarea, select { font: inherit; }
+
+.phone-page { min-height: 100vh; background: #1f2937; color: #f9fafb; }
+.mobile-header { position: fixed; inset: 0 0 auto; z-index: 10; height: 44px; display: flex; align-items: center; justify-content: center; background: #1f2937; box-shadow: 0 1px 0 rgba(255,255,255,.05); font-size: 18px; font-weight: 800; }
+.password-page { min-height: 100vh; overflow: hidden; background: #fdf2f8; color: #1a1a2e; }
+.password-bg { position: fixed; inset: 0; opacity: .1; background: url("../img/password-bg.png") center/cover; }
+.password-main { position: relative; z-index: 1; display: flex; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 42px 20px 34px; text-align: center; }
+.store-title { margin: 0 0 8px; color: #f472b6; font-size: 30px; font-weight: 800; }
+.store-subtitle, .store-description { margin: 0 0 4px; color: #ec4899; font-size: 14px; }
+.lock-mark { display: grid; width: 78px; height: 78px; margin: 32px 0 18px; place-items: center; border-radius: 24px; background: linear-gradient(145deg, rgba(43,110,245,.14), rgba(244,114,182,.14)); color: #2b6ef5; box-shadow: 0 16px 34px rgba(43,110,245,.16), inset 0 0 0 1px rgba(43,110,245,.12); }
+.lock-mark svg { width: 38px; height: 38px; stroke: currentColor; stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.password-title { margin: 0 0 24px; font-size: 20px; }
+.code-row { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; }
+.code-box { display: grid; width: 40px; height: 40px; place-items: center; border: 2px solid #e5e7eb; border-radius: 16px; background: #fff; font-weight: 800; }
+.code-box.active { border-color: #2b6ef5; }
+.code-box.filled { border-color: #2b6ef5; background: #2b6ef5; color: #fff; }
+.eye-btn, .delete-btn { border: 0; background: transparent; color: #6b7280; }
+.keypad { display: grid; width: 280px; grid-template-columns: repeat(3,72px); justify-content: space-between; gap: 16px 0; margin-bottom: 24px; }
+.num-btn { width: 72px; height: 72px; border: 0; border-radius: 999px; background: #fff; box-shadow: 0 2px 8px rgba(15,23,42,.08); color: #1f2937; font-size: 24px; font-weight: 700; }
+.primary-action { width: 280px; height: 44px; border: 0; border-radius: 8px; background: #2b6ef5; color: #fff; font-size: 16px; font-weight: 800; }
+.error-text { height: 20px; color: #ff4d4f; font-size: 12px; }
+.shake { animation: shake .5s ease-in-out; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+
+.browser-guide-page { min-height: 100vh; overflow: hidden; background: linear-gradient(180deg, #fff7fb 0%, #eef6ff 52%, #fff 100%); color: #2f2442; }
+.browser-guide-page .password-bg { opacity: .2; background-position: center top; }
+.browser-guide-main { position: relative; z-index: 1; display: flex; min-height: 100vh; flex-direction: column; justify-content: space-between; padding: max(20px, env(safe-area-inset-top)) 18px max(22px, env(safe-area-inset-bottom)); }
+.browser-guide-main::before { content: ""; position: fixed; top: 84px; left: -28px; width: 120%; height: 92px; background: linear-gradient(105deg, rgba(124,200,255,.18), rgba(255,255,255,0)); transform: rotate(-8deg); pointer-events: none; }
+.browser-guide-main::after { content: ""; position: fixed; right: -38px; bottom: 128px; width: 120%; height: 86px; background: linear-gradient(105deg, rgba(255,255,255,0), rgba(244,114,182,.16)); transform: rotate(7deg); pointer-events: none; }
+.browser-guide-top { align-self: flex-end; display: flex; gap: 5px; width: 52px; height: 28px; align-items: center; justify-content: center; border-radius: 999px; background: rgba(255,255,255,.76); box-shadow: 0 8px 24px rgba(43,110,245,.12), inset 0 0 0 1px rgba(244,114,182,.18); }
+.browser-guide-top span { width: 5px; height: 5px; border-radius: 999px; background: #2b6ef5; box-shadow: 0 0 12px rgba(43,110,245,.45); }
+.browser-guide-hero { position: relative; margin-top: 12px; padding-right: 56px; }
+.browser-guide-bubble { position: relative; padding: 18px 18px 20px; border-radius: 28px 28px 10px 28px; background: linear-gradient(135deg, rgba(255,255,255,.94), rgba(255,232,245,.94)); box-shadow: 0 18px 42px rgba(244,114,182,.18), inset 0 0 0 1px rgba(255,255,255,.8); }
+.browser-guide-bubble::after { content: ""; position: absolute; right: 28px; bottom: -16px; border-width: 18px 8px 0 18px; border-style: solid; border-color: rgba(255,232,245,.94) transparent transparent transparent; transform: rotate(-10deg); }
+.guide-kicker { display: inline-flex; margin-bottom: 8px; padding: 5px 10px; border-radius: 999px; background: rgba(43,110,245,.1); color: #2b6ef5; font-size: 12px; font-weight: 800; }
+.browser-guide-bubble h1 { margin: 0; color: #f472b6; font-size: 30px; line-height: 1.18; letter-spacing: 0; }
+.browser-guide-bubble p { margin: 10px 0 0; color: #7c6b8e; font-size: 14px; line-height: 1.6; }
+.guide-arrow { position: absolute; top: -4px; right: 6px; width: 54px; height: 130px; }
+.guide-arrow::before { content: ""; position: absolute; right: 22px; bottom: 18px; width: 2px; height: 92px; border-right: 3px dashed #2b6ef5; }
+.guide-arrow::after { content: ""; position: absolute; top: 2px; right: 12px; width: 20px; height: 20px; border-top: 4px solid #2b6ef5; border-right: 4px solid #2b6ef5; transform: rotate(-45deg); }
+.guide-arrow span { position: absolute; right: 2px; bottom: 0; width: 48px; height: 48px; border-radius: 18px; background: linear-gradient(145deg, #fff, #ffe6f2); box-shadow: 0 12px 24px rgba(43,110,245,.16); transform: rotate(-8deg); }
+.guide-arrow span:nth-child(2) { right: 17px; bottom: 34px; width: 18px; height: 52px; border-radius: 999px; background: #ffd3a8; box-shadow: none; }
+.guide-arrow span:nth-child(3) { right: 13px; bottom: 78px; width: 22px; height: 28px; border-radius: 999px 999px 12px 12px; background: #ffd3a8; box-shadow: inset 4px 0 0 rgba(255,255,255,.35); }
+.browser-guide-card { display: grid; grid-template-columns: 126px minmax(0, 1fr); gap: 14px; align-items: center; margin: 30px 0 22px; padding: 16px; border-radius: 8px; background: rgba(255,255,255,.68); box-shadow: 0 18px 44px rgba(43,110,245,.12), inset 0 0 0 1px rgba(255,255,255,.86); backdrop-filter: blur(12px); }
+.guide-girl { position: relative; height: 168px; filter: drop-shadow(0 12px 16px rgba(244,114,182,.22)); }
+.girl-hair { position: absolute; left: 14px; top: 8px; width: 98px; height: 106px; border-radius: 46px 46px 34px 34px; background: linear-gradient(145deg, #ffdceb, #fff2f8 48%, #bfe3ff); box-shadow: inset -10px -6px 0 rgba(244,114,182,.18); }
+.girl-hair::before, .girl-hair::after { content: ""; position: absolute; top: 20px; width: 34px; height: 72px; border-radius: 999px; background: linear-gradient(180deg, #fff5fb, #ffd7e9); }
+.girl-hair::before { left: -8px; transform: rotate(14deg); }
+.girl-hair::after { right: -8px; transform: rotate(-14deg); }
+.girl-face { position: absolute; left: 28px; top: 44px; width: 70px; height: 62px; border-radius: 28px 28px 32px 32px; background: #fff2ea; box-shadow: inset 0 -5px 0 rgba(255,190,196,.22); }
+.girl-face i { position: absolute; top: 23px; width: 13px; height: 18px; border-radius: 999px; background: radial-gradient(circle at 35% 32%, #fff 0 18%, #8c4f8f 20% 100%); }
+.girl-face i:first-child { left: 16px; }
+.girl-face i:nth-child(2) { right: 16px; }
+.girl-face b { position: absolute; left: 30px; bottom: 13px; width: 12px; height: 6px; border-radius: 0 0 999px 999px; background: #f472b6; }
+.girl-body { position: absolute; left: 29px; bottom: 8px; width: 70px; height: 60px; border-radius: 24px 24px 18px 18px; background: linear-gradient(145deg, #f472b6, #7cc8ff); }
+.girl-body::before, .girl-body::after { content: ""; position: absolute; top: 18px; width: 30px; height: 12px; border-radius: 999px; background: #fff3f8; }
+.girl-body::before { left: -20px; transform: rotate(-28deg); }
+.girl-body::after { right: -20px; transform: rotate(28deg); }
+.guide-steps { display: grid; gap: 10px; min-width: 0; }
+.guide-step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; align-items: center; min-height: 38px; }
+.guide-step strong { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 999px; background: linear-gradient(145deg, #2b6ef5, #7cc8ff); color: #fff; font-size: 14px; box-shadow: 0 8px 18px rgba(43,110,245,.22); }
+.guide-step span { color: #5b516c; font-size: 14px; font-weight: 700; line-height: 1.4; }
+.browser-copy-panel { margin-top: auto; padding: 16px 14px 0; text-align: center; }
+.browser-copy-panel p { margin: 0 auto 14px; max-width: 300px; color: #7c6b8e; font-size: 13px; line-height: 1.6; }
+.copy-link-btn { width: min(100%, 300px); height: 48px; border: 0; border-radius: 999px; background: linear-gradient(135deg, #2b6ef5, #f472b6); color: #fff; font-size: 16px; font-weight: 900; box-shadow: 0 14px 30px rgba(244,114,182,.28); }
+.copy-link-btn:active { transform: scale(.98); }
+.copy-tip { min-height: 20px; margin-top: 10px; color: #2b6ef5; font-size: 12px; font-weight: 700; }
+
+.list-layout { display: flex; min-height: 100vh; padding-top: 44px; overflow-x: hidden; }
+.category-nav { position: fixed; top: 44px; bottom: 0; left: 0; width: 80px; overflow-y: auto; background: #374151; scrollbar-width: none; }
+.category-nav::-webkit-scrollbar, .card-area::-webkit-scrollbar, .detail-main::-webkit-scrollbar { display: none; }
+.category-item { padding: 13px 12px; border-radius: 0 8px 8px 0; color: #e5e7eb; cursor: pointer; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.category-item.active { background: #4dabf7; color: #fff; }
+.card-area { width: auto; min-width: 0; flex: 1; margin-left: 80px; padding: 20px 14px 28px; overflow-y: auto; overflow-x: hidden; }
+.card-grid { display: grid; width: 100%; max-width: 420px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
+.product-card { width: 100%; min-width: 0; min-height: 194px; padding: 10px; border-radius: 12px; background: #4b5563; box-shadow: 0 8px 30px rgba(0,0,0,.2); cursor: pointer; transition: transform .15s ease; }
+.product-card:active { transform: scale(.95); }
+.product-card img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+.product-card h2 { margin: 10px 0 4px; overflow: hidden; color: #e5e7eb; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.product-card p { margin: 0; overflow: hidden; color: #9ca3af; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.back-btn { position: absolute; left: 8px; display: grid; width: 32px; height: 32px; place-items: center; border: 0; background: transparent; color: #fff; font-size: 24px; text-decoration: none; }
+.detail-main { min-height: 100vh; padding: 68px 16px 32px; background: #1a1a2e; overflow-y: auto; }
+.detail-title { margin: 0; color: #fff; font-size: 22px; line-height: 1.4; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+.tag { padding: 4px 8px; border-radius: 4px; background: #e8f0fe; color: #2b6ef5; font-size: 12px; }
+.divider { height: 1px; margin-bottom: 22px; background: #374151; }
+.content-body { color: #e5e7eb; font-size: 15px; line-height: 1.8; }
+.content-body img { width: 100%; border-radius: 8px; }
+.content-body figure { margin: 18px 0; }
+.content-body figcaption { margin-top: 8px; color: #9ca3af; font-size: 12px; text-align: center; }
+.empty-state { color: #9ca3af; padding: 32px 0; text-align: center; }
+
+@media (max-width: 340px) {
+    .browser-guide-main { padding-right: 14px; padding-left: 14px; }
+    .browser-guide-hero { padding-right: 42px; }
+    .browser-guide-bubble { padding: 16px 15px 18px; }
+    .browser-guide-bubble h1 { font-size: 24px; }
+    .browser-guide-card { grid-template-columns: 98px minmax(0, 1fr); gap: 10px; padding: 14px 12px; }
+    .guide-girl { height: 138px; transform: scale(.82); transform-origin: left center; }
+    .guide-step span { font-size: 13px; }
+    .card-area { padding: 16px 14px 24px; }
+    .card-grid { grid-template-columns: 1fr; }
+}

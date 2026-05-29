@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>请使用浏览器打开</title>
+    <link rel="stylesheet" href="assets/css/mobile.css">
+</head>
+<body class="browser-guide-page">
+    <div class="password-bg"></div>
+    <main class="browser-guide-main">
+        <div class="browser-guide-top" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <section class="browser-guide-hero">
+            <div class="browser-guide-bubble">
+                <span class="guide-kicker">微信里暂时打不开完整体验</span>
+                <h1>请点右上角<br>用手机浏览器打开</h1>
+                <p>选择“在浏览器打开”后，就能继续访问本站啦。</p>
+            </div>
+            <div class="guide-arrow" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </section>
+
+        <section class="browser-guide-card">
+            <div class="guide-girl" aria-hidden="true">
+                <div class="girl-hair"></div>
+                <div class="girl-face">
+                    <i></i>
+                    <i></i>
+                    <b></b>
+                </div>
+                <div class="girl-body"></div>
+            </div>
+            <div class="guide-steps">
+                <div class="guide-step">
+                    <strong>1</strong>
+                    <span>点击右上角“...”</span>
+                </div>
+                <div class="guide-step">
+                    <strong>2</strong>
+                    <span>选择在浏览器中打开</span>
+                </div>
+                <div class="guide-step">
+                    <strong>3</strong>
+                    <span>继续浏览你想看的内容</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="browser-copy-panel">
+            <p>也可以复制链接后，粘贴到 Safari、Chrome 或手机默认浏览器。</p>
+            <button class="copy-link-btn" type="button" id="copyLinkBtn">复制本站网址</button>
+            <div class="copy-tip" id="copyTip" role="status" aria-live="polite"></div>
+        </section>
+    </main>
+    <script src="js/mobile.js"></script>
+    <script>
+        const copyButton = document.getElementById("copyLinkBtn");
+        const copyTip = document.getElementById("copyTip");
+        const targetUrl = getTargetUrl();
+
+        function getTargetUrl() {
+            const redirect = new URLSearchParams(location.search).get("redirect");
+            if (!redirect) return location.href;
+
+            try {
+                const target = new URL(redirect, location.href);
+                if (target.origin === location.origin && !target.pathname.endsWith("/open-browser.html")) {
+                    return target.href;
+                }
+            } catch {
+                // Fall through to copying the current guide URL.
+            }
+
+            return location.href;
+        }
+
+        async function copyText(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return;
+            }
+
+            const input = document.createElement("textarea");
+            input.value = text;
+            input.setAttribute("readonly", "");
+            input.style.position = "fixed";
+            input.style.left = "-9999px";
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand("copy");
+            input.remove();
+        }
+
+        copyButton.addEventListener("click", async () => {
+            try {
+                await copyText(targetUrl);
+                copyTip.textContent = "链接复制好啦，去浏览器粘贴打开吧。";
+            } catch {
+                copyTip.textContent = "复制失败，请手动复制地址栏链接。";
+            }
+        });
+    </script>
+</body>
+</html>

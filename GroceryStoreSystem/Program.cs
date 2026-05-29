@@ -2,21 +2,53 @@ using GroceryStoreSystem.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
+const string CorsPolicyName = "SeparatedH5Frontends";
 
-// Add services to the container.
-builder.Services.AddRazorPages(options =>
-{
-    options.Conventions.AuthorizeFolder("/Admin");
-    options.Conventions.AllowAnonymousToPage("/Admin/Login");
-});
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicyName, policy =>
+    {
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Admin/Login";
-        options.LogoutPath = "/Admin/Logout";
-        options.AccessDeniedPath = "/Admin/Login";
+        options.LoginPath = "/";
+        options.LogoutPath = "/";
+        options.AccessDeniedPath = "/";
         options.Cookie.Name = "grocery_admin";
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Events = new CookieAuthenticationEvents
+        {
+            OnRedirectToLogin = context =>
+            {
+                if (context.Request.Path.StartsWithSegments("/api"))
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                }
+
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            },
+            OnRedirectToAccessDenied = context =>
+            {
+                if (context.Request.Path.StartsWithSegments("/api"))
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    return Task.CompletedTask;
+                }
+
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
@@ -34,11 +66,9 @@ using (var scope = app.Services.CreateScope())
     await initializer.InitializeAsync();
 }
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseExceptionHandler("/error");
     app.UseHsts();
 }
 
@@ -46,13 +76,17 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseCors(CorsPolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
 app.MapControllers();
-app.MapRazorPages()
-   .WithStaticAssets();
+app.MapGet("/", () => Results.Ok(new
+{
+    Name = "GroceryStoreSystem API",
+    Status = "Running"
+}));
+app.MapGet("/error", () => Results.Problem("服务暂时不可用，请稍后重试。"));
 
 app.Run();

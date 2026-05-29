@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>详情</title>
+    <link rel="stylesheet" href="assets/css/mobile.css">
+</head>
+<body class="phone-page">
+    <header class="mobile-header">
+        <a class="back-btn" href="index.html">‹</a>
+        <span>文章详情</span>
+    </header>
+    <main class="detail-main">
+        <h1 class="detail-title" id="title"></h1>
+        <div class="tag-row" id="tags"></div>
+        <div class="divider"></div>
+        <article class="content-body" id="content"></article>
+    </main>
+    <script src="js/mobile.js"></script>
+    <script>
+        if (!window.__WECHAT_BROWSER_GUIDE_ACTIVE__) {
+        const id = new URLSearchParams(location.search).get("id");
+        (async function init() {
+            const card = await apiGet(`/api/mobile/cards/${id}`);
+            if (!card) return;
+            document.title = card.title;
+            document.getElementById("title").textContent = card.title;
+            document.getElementById("tags").innerHTML = (card.tags || []).map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join("");
+            document.getElementById("content").innerHTML = rewriteMediaUrls(card.contentHtml || "");
+        })();
+        }
+    </script>
+</body>
+</html>

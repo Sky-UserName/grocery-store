@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分类卡片</title>
+    <link rel="stylesheet" href="assets/css/mobile.css">
+</head>
+<body class="phone-page">
+    <header class="mobile-header" id="siteName"></header>
+    <main class="list-layout">
+        <aside class="category-nav" id="categoryNav"></aside>
+        <section class="card-area">
+            <div class="card-grid" id="cardGrid"></div>
+            <div class="empty-state" id="emptyState" hidden>暂无内容</div>
+        </section>
+    </main>
+    <script src="js/mobile.js"></script>
+    <script>
+        if (!window.__WECHAT_BROWSER_GUIDE_ACTIVE__) {
+        let active = "";
+        let categories = [];
+
+        async function renderCategories() {
+            document.getElementById("categoryNav").innerHTML = [
+                `<div class="category-item ${active === "" ? "active" : ""}" data-id="">全部</div>`,
+                ...categories.map(category => `<div class="category-item ${String(active) === String(category.id) ? "active" : ""}" data-id="${category.id}">${escapeHtml(category.name)}</div>`)
+            ].join("");
+        }
+
+        async function renderCards() {
+            const query = active ? `?categoryId=${active}` : "";
+            const cards = await apiGet(`/api/mobile/cards${query}`);
+            if (!cards) return;
+            document.getElementById("emptyState").hidden = cards.length > 0;
+            document.getElementById("cardGrid").innerHTML = cards.map(card => `
+                <article class="product-card" data-id="${card.id}">
+                    <img src="${mediaUrl(card.coverImageUrl)}" alt="${escapeHtml(card.title)}">
+                    <h2>${escapeHtml(card.title)}</h2>
+                    <p>${escapeHtml(card.summary)}</p>
+                </article>
+            `).join("");
+        }
+
+        document.getElementById("categoryNav").addEventListener("click", event => {
+            const item = event.target.closest(".category-item");
+            if (!item) return;
+            active = item.dataset.id;
+            renderCategories();
+            renderCards();
+        });
+        document.getElementById("cardGrid").addEventListener("click", event => {
+            const card = event.target.closest(".product-card");
+            if (card) location.href = `detail.html?id=${encodeURIComponent(card.dataset.id)}`;
+        });
+
+        (async function init() {
+            const config = await getConfig();
+            setText("siteName", config.siteName);
+            categories = await apiGet("/api/mobile/categories") || [];
+            await renderCategories();
+            await renderCards();
+        })();
+        }
+    </script>
+</body>
+</html>

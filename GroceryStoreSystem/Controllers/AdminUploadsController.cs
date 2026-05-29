@@ -1,12 +1,10 @@
 using GroceryStoreSystem.Models;
 using GroceryStoreSystem.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GroceryStoreSystem.Controllers;
 
 [ApiController]
-[Authorize]
 [Route("api/admin/uploads")]
 public sealed class AdminUploadsController(IWebHostEnvironment environment, IConfiguration configuration, SqlDataStore store) : ControllerBase
 {
@@ -19,6 +17,10 @@ public sealed class AdminUploadsController(IWebHostEnvironment environment, ICon
     [RequestSizeLimit(10_000_000)]
     public async Task<IActionResult> UploadImage(IFormFile? file, [FromForm] string usageType = "content")
     {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return Unauthorized();
+        }
         if (file is null || file.Length == 0)
         {
             return BadRequest(new { Message = "请选择图片文件" });
