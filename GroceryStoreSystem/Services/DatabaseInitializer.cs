@@ -1,5 +1,5 @@
 using GroceryStoreSystem.Models;
-using Microsoft.Data.SqlClient;
+using MySqlConnector;
 
 namespace GroceryStoreSystem.Services;
 
@@ -14,124 +14,129 @@ public sealed class DatabaseInitializer(SqlDataStore store, PasswordHasher hashe
 
     private async Task EnsureDatabaseAsync()
     {
-        var builder = new SqlConnectionStringBuilder(store.ConnectionString);
-        var databaseName = builder.InitialCatalog;
+        var builder = new MySqlConnectionStringBuilder(store.ConnectionString);
+        var databaseName = builder.Database;
         if (string.IsNullOrWhiteSpace(databaseName))
         {
             return;
         }
 
-        builder.InitialCatalog = "master";
-        await using var connection = new SqlConnection(builder.ConnectionString);
+        builder.Database = "";
+        await using var connection = new MySqlConnection(builder.ConnectionString);
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
-        command.CommandText = $"""
-            IF DB_ID(@DatabaseName) IS NULL
-            BEGIN
-                DECLARE @sql nvarchar(max) = N'CREATE DATABASE {QuoteIdentifier(databaseName)}';
-                EXEC(@sql);
-            END
-            """;
+        command.CommandText = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = @DatabaseName";
         command.Parameters.AddWithValue("@DatabaseName", databaseName);
+        if (Convert.ToInt32(await command.ExecuteScalarAsync()) > 0)
+        {
+            return;
+        }
+
+        command.Parameters.Clear();
+        command.CommandText = $"CREATE DATABASE {QuoteIdentifier(databaseName)} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
         await command.ExecuteNonQueryAsync();
     }
 
     private async Task EnsureTablesAsync()
     {
         await ExecuteSchemaAsync("""
-            IF OBJECT_ID(N'AdminUsers', N'U') IS NULL
-            CREATE TABLE AdminUsers (
-                Id bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                Username nvarchar(50) NOT NULL UNIQUE,
-                PasswordHash nvarchar(255) NOT NULL,
-                PasswordSalt nvarchar(255) NOT NULL,
-                Status int NOT NULL CONSTRAINT DF_AdminUsers_Status DEFAULT 1,
-                LastLoginAt datetime2 NULL,
-                CreatedAt datetime2 NOT NULL CONSTRAINT DF_AdminUsers_CreatedAt DEFAULT SYSUTCDATETIME(),
-                UpdatedAt datetime2 NOT NULL CONSTRAINT DF_AdminUsers_UpdatedAt DEFAULT SYSUTCDATETIME()
-            )
+            CREATE TABLE IF NOT EXISTS AdminUsers (
+                Id bigint NOT NULL AUTO_INCREMENT,
+                Username varchar(50) NOT NULL,
+                PasswordHash varchar(255) NOT NULL,
+                PasswordSalt varchar(255) NOT NULL,
+                Status int NOT NULL DEFAULT 1,
+                LastLoginAt datetime NULL,
+                CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UpdatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (Id),
+                UNIQUE KEY UX_AdminUsers_Username (Username)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """);
 
         await ExecuteSchemaAsync("""
-            IF OBJECT_ID(N'SiteConfig', N'U') IS NULL
-            CREATE TABLE SiteConfig (
-                Id bigint NOT NULL PRIMARY KEY,
-                SiteName nvarchar(100) NOT NULL,
-                SiteSubtitle nvarchar(200) NOT NULL,
-                SiteDescription nvarchar(500) NOT NULL,
-                AccessPasswordHash nvarchar(255) NOT NULL,
-                AccessPasswordSalt nvarchar(255) NOT NULL,
-                AccessPasswordEnabled bit NOT NULL,
-                UpdatedAt datetime2 NOT NULL CONSTRAINT DF_SiteConfig_UpdatedAt DEFAULT SYSUTCDATETIME()
-            )
+            CREATE TABLE IF NOT EXISTS SiteConfig (
+                Id bigint NOT NULL,
+                SiteName varchar(100) NOT NULL,
+                SiteSubtitle varchar(200) NOT NULL,
+                SiteDescription varchar(500) NOT NULL,
+                AccessPasswordHash varchar(255) NOT NULL,
+                AccessPasswordSalt varchar(255) NOT NULL,
+                AccessPasswordEnabled tinyint(1) NOT NULL,
+                UpdatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (Id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """);
 
         await ExecuteSchemaAsync("""
-            IF OBJECT_ID(N'Categories', N'U') IS NULL
-            CREATE TABLE Categories (
-                Id bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                Name nvarchar(100) NOT NULL,
-                Slug nvarchar(100) NOT NULL UNIQUE,
-                Icon nvarchar(255) NULL,
+            CREATE TABLE IF NOT EXISTS Categories (
+                Id bigint NOT NULL AUTO_INCREMENT,
+                Name varchar(100) NOT NULL,
+                Slug varchar(100) NOT NULL,
+                Icon varchar(255) NULL,
                 SortOrder int NOT NULL,
-                IsEnabled bit NOT NULL,
-                CreatedAt datetime2 NOT NULL CONSTRAINT DF_Categories_CreatedAt DEFAULT SYSUTCDATETIME(),
-                UpdatedAt datetime2 NOT NULL CONSTRAINT DF_Categories_UpdatedAt DEFAULT SYSUTCDATETIME()
-            )
+                IsEnabled tinyint(1) NOT NULL,
+                CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UpdatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (Id),
+                UNIQUE KEY UX_Categories_Slug (Slug)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """);
 
         await ExecuteSchemaAsync("""
-            IF OBJECT_ID(N'Cards', N'U') IS NULL
-            CREATE TABLE Cards (
-                Id bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS Cards (
+                Id bigint NOT NULL AUTO_INCREMENT,
                 CategoryId bigint NOT NULL,
-                Title nvarchar(200) NOT NULL,
-                Summary nvarchar(500) NOT NULL,
-                CoverImageUrl nvarchar(500) NULL,
-                ContentHtml nvarchar(max) NOT NULL,
+                Title varchar(200) NOT NULL,
+                Summary varchar(500) NOT NULL,
+                CoverImageUrl varchar(500) NULL,
+                ContentHtml longtext NOT NULL,
                 Status int NOT NULL,
                 SortOrder int NOT NULL,
-                PublishedAt datetime2 NULL,
-                CreatedAt datetime2 NOT NULL CONSTRAINT DF_Cards_CreatedAt DEFAULT SYSUTCDATETIME(),
-                UpdatedAt datetime2 NOT NULL CONSTRAINT DF_Cards_UpdatedAt DEFAULT SYSUTCDATETIME(),
+                PublishedAt datetime NULL,
+                CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UpdatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (Id),
+                KEY IX_Cards_CategoryId (CategoryId),
                 CONSTRAINT FK_Cards_Categories FOREIGN KEY (CategoryId) REFERENCES Categories(Id)
-            )
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """);
 
         await ExecuteSchemaAsync("""
-            IF OBJECT_ID(N'Tags', N'U') IS NULL
-            CREATE TABLE Tags (
-                Id bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                Name nvarchar(50) NOT NULL UNIQUE,
-                Color nvarchar(30) NULL,
-                CreatedAt datetime2 NOT NULL CONSTRAINT DF_Tags_CreatedAt DEFAULT SYSUTCDATETIME()
-            )
+            CREATE TABLE IF NOT EXISTS Tags (
+                Id bigint NOT NULL AUTO_INCREMENT,
+                Name varchar(50) NOT NULL,
+                Color varchar(30) NULL,
+                CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (Id),
+                UNIQUE KEY UX_Tags_Name (Name)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """);
 
         await ExecuteSchemaAsync("""
-            IF OBJECT_ID(N'CardTags', N'U') IS NULL
-            CREATE TABLE CardTags (
+            CREATE TABLE IF NOT EXISTS CardTags (
                 CardId bigint NOT NULL,
                 TagId bigint NOT NULL,
-                CONSTRAINT PK_CardTags PRIMARY KEY (CardId, TagId),
+                PRIMARY KEY (CardId, TagId),
+                KEY IX_CardTags_TagId (TagId),
                 CONSTRAINT FK_CardTags_Cards FOREIGN KEY (CardId) REFERENCES Cards(Id) ON DELETE CASCADE,
                 CONSTRAINT FK_CardTags_Tags FOREIGN KEY (TagId) REFERENCES Tags(Id) ON DELETE CASCADE
-            )
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """);
 
         await ExecuteSchemaAsync("""
-            IF OBJECT_ID(N'UploadFiles', N'U') IS NULL
-            CREATE TABLE UploadFiles (
-                Id bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                OriginalName nvarchar(255) NOT NULL,
-                FileName nvarchar(255) NOT NULL,
-                FileUrl nvarchar(500) NOT NULL,
+            CREATE TABLE IF NOT EXISTS UploadFiles (
+                Id bigint NOT NULL AUTO_INCREMENT,
+                OriginalName varchar(255) NOT NULL,
+                FileName varchar(255) NOT NULL,
+                FileUrl varchar(500) NOT NULL,
                 FileSize bigint NOT NULL,
-                MimeType nvarchar(100) NOT NULL,
-                UsageType nvarchar(50) NOT NULL,
-                CreatedAt datetime2 NOT NULL CONSTRAINT DF_UploadFiles_CreatedAt DEFAULT SYSUTCDATETIME()
-            )
+                MimeType varchar(100) NOT NULL,
+                UsageType varchar(50) NOT NULL,
+                CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (Id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """);
     }
 
@@ -142,7 +147,7 @@ public sealed class DatabaseInitializer(SqlDataStore store, PasswordHasher hashe
             var (hash, salt) = hasher.Create("Admin@123456");
             await store.ExecuteAsync("""
                 INSERT INTO AdminUsers (Username, PasswordHash, PasswordSalt, Status, CreatedAt, UpdatedAt)
-                VALUES (@Username, @Hash, @Salt, 1, SYSUTCDATETIME(), SYSUTCDATETIME())
+                VALUES (@Username, @Hash, @Salt, 1, UTC_TIMESTAMP(), UTC_TIMESTAMP())
                 """, ("@Username", "admin"), ("@Hash", hash), ("@Salt", salt));
         }
 
@@ -151,7 +156,7 @@ public sealed class DatabaseInitializer(SqlDataStore store, PasswordHasher hashe
             var (hash, salt) = hasher.Create("888888");
             await store.ExecuteAsync("""
                 INSERT INTO SiteConfig (Id, SiteName, SiteSubtitle, SiteDescription, AccessPasswordHash, AccessPasswordSalt, AccessPasswordEnabled, UpdatedAt)
-                VALUES (1, @SiteName, @Subtitle, @Description, @Hash, @Salt, 1, SYSUTCDATETIME())
+                VALUES (1, @SiteName, @Subtitle, @Description, @Hash, @Salt, 1, UTC_TIMESTAMP())
                 """,
                 ("@SiteName", "梦梦杂货铺"),
                 ("@Subtitle", "每日更新 稳定靠谱"),
@@ -227,6 +232,6 @@ public sealed class DatabaseInitializer(SqlDataStore store, PasswordHasher hashe
 
     private static string QuoteIdentifier(string value)
     {
-        return "[" + value.Replace("]", "]]") + "]";
+        return "`" + value.Replace("`", "``") + "`";
     }
 }

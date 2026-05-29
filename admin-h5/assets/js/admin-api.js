@@ -3,7 +3,7 @@ const navButtons = document.querySelectorAll(".bottom-nav button");
 const richEditor = document.getElementById("richEditor");
 const cardForm = document.getElementById("cardForm");
 const categoryForm = document.getElementById("categoryForm");
-const API_BASE_URL = window.API_BASE_URL || "http://localhost:5088";
+const API_BASE_URL = window.API_BASE_URL || "http://localhost:5083";
 const MOBILE_BASE_URL = window.MOBILE_BASE_URL || "http://localhost:5100/login.html";
 
 let state = {
@@ -13,6 +13,7 @@ let state = {
     stats: { categoryCount: 0, cardCount: 0, publishedCount: 0 },
     signedIn: false
 };
+let savedEditorRange = null;
 
 function mobileUrl() {
     return MOBILE_BASE_URL;
@@ -36,6 +37,61 @@ function rewriteMediaUrls(html) {
     return wrapper.innerHTML;
 }
 
+function saveEditorSelection() {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    if (richEditor.contains(range.commonAncestorContainer)) {
+        savedEditorRange = range.cloneRange();
+    }
+}
+
+function restoreEditorSelection() {
+    richEditor.focus();
+    const selection = window.getSelection();
+    if (!selection) return null;
+
+    selection.removeAllRanges();
+    if (savedEditorRange) {
+        selection.addRange(savedEditorRange);
+        return savedEditorRange;
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(richEditor);
+    range.collapse(false);
+    selection.addRange(range);
+    savedEditorRange = range.cloneRange();
+    return range;
+}
+
+function insertEditorHtml(html) {
+    restoreEditorSelection();
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const template = document.createElement("template");
+    template.innerHTML = html.trim();
+    const fragment = template.content;
+    const lastNode = fragment.lastChild;
+
+    range.deleteContents();
+    range.insertNode(fragment);
+
+    if (lastNode) {
+        const nextRange = document.createRange();
+        nextRange.setStartAfter(lastNode);
+        nextRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(nextRange);
+        savedEditorRange = nextRange.cloneRange();
+    }
+
+    richEditor.focus();
+}
+
 async function api(url, options = {}) {
     const response = await fetch(apiUrl(url), {
         credentials: "include",
@@ -43,7 +99,7 @@ async function api(url, options = {}) {
         ...options
     });
     if (response.status === 401) {
-        showLogin(true);
+        redirectToLogin();
         throw new Error("请先登录");
     }
     if (!response.ok) {
@@ -64,18 +120,18 @@ function switchPage(name) {
     render();
 }
 
-function showLogin(visible) {
-    document.getElementById("loginModal").classList.toggle("active", visible);
+function redirectToLogin() {
+    const next = encodeURIComponent(`${location.pathname}${location.search}${location.hash}`);
+    location.href = `login.html?next=${next}`;
 }
 
 async function loadState() {
     const session = await api("/api/admin/session");
     state.signedIn = session.authenticated;
     if (!state.signedIn) {
-        showLogin(true);
+        redirectToLogin();
         return;
     }
-    showLogin(false);
     const [stats, config, categories, cards] = await Promise.all([
         api("/api/admin/dashboard"),
         api("/api/admin/config"),
@@ -189,6 +245,7 @@ async function editCard(id) {
     cardForm.cover.value = card?.coverImageUrl || "";
     document.getElementById("coverPreview").src = mediaUrl(card?.coverImageUrl);
     richEditor.innerHTML = card?.contentHtml ? rewriteMediaUrls(card.contentHtml) : "<p>请输入详情内容。</p>";
+    savedEditorRange = null;
     openModal("cardModal");
 }
 
@@ -214,17 +271,15 @@ document.querySelectorAll("[data-go]").forEach(button => button.addEventListener
 document.querySelectorAll("[data-close]").forEach(button => button.addEventListener("click", () => closeModal(button.dataset.close)));
 document.getElementById("newCategory").addEventListener("click", () => editCategory());
 document.getElementById("newCard").addEventListener("click", () => editCard());
+["keyup", "mouseup", "input", "focus"].forEach(eventName => {
+    richEditor.addEventListener(eventName, saveEditorSelection);
+});
 
-document.getElementById("loginForm").addEventListener("submit", async event => {
-    event.preventDefault();
+document.getElementById("logoutBtn").addEventListener("click", async () => {
     try {
-        await api("/api/admin/login", {
-            method: "POST",
-            body: JSON.stringify({ username: event.target.username.value, password: event.target.password.value })
-        });
-        await loadState();
-    } catch (error) {
-        alert(error.message);
+        await api("/api/admin/logout", { method: "POST" });
+    } finally {
+        redirectToLogin();
     }
 });
 
@@ -342,14 +397,20 @@ cardForm.addEventListener("submit", async event => {
 
 document.querySelectorAll("[data-command]").forEach(button => {
     button.addEventListener("click", () => {
+        restoreEditorSelection();
         document.execCommand(button.dataset.command, false);
+        saveEditorSelection();
         richEditor.focus();
     });
 });
 
 document.getElementById("insertLink").addEventListener("click", () => {
+    restoreEditorSelection();
     const url = prompt("请输入链接");
-    if (url) document.execCommand("createLink", false, url);
+    if (url) {
+        document.execCommand("createLink", false, url);
+        saveEditorSelection();
+    }
 });
 
 document.getElementById("coverFile").addEventListener("change", async event => {
@@ -369,7 +430,7 @@ document.getElementById("contentImage").addEventListener("change", async event =
     if (!file) return;
     try {
         const result = await uploadImage(file, "content");
-        document.execCommand("insertHTML", false, `<figure><img src="${mediaUrl(result.url)}" alt=""><figcaption>图片说明</figcaption></figure>`);
+        insertEditorHtml(`<figure><img src="${mediaUrl(result.url)}" alt=""><figcaption>图片说明</figcaption></figure><p><br></p>`);
         event.target.value = "";
     } catch (error) {
         alert(error.message);

@@ -6,6 +6,7 @@ button { cursor: pointer; }
 .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; height: 54px; padding: 0 16px; background: #101827; color: #fff; }
 .topbar h1 { margin: 0; font-size: 17px; font-weight: 800; }
 .topbar a, .topbar button { border: 0; background: transparent; color: #c7d2fe; text-decoration: none; }
+.topbar-actions { display: flex; align-items: center; gap: 14px; }
 .page { display: none; padding: 16px; }
 .page.active { display: block; }
 .card { margin-bottom: 14px; padding: 14px; border-radius: 12px; background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.06); }
@@ -36,7 +37,8 @@ button { cursor: pointer; }
 .editor-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; border: 1px solid #d8dee9; border-bottom: 0; border-radius: 9px 9px 0 0; background: #f8fafc; }
 .editor-toolbar button, .editor-toolbar label { min-height: 30px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #111827; padding: 5px 8px; font-size: 12px; }
 .rich-editor { min-height: 220px; padding: 12px; border: 1px solid #d8dee9; border-radius: 0 0 9px 9px; background: #fff; outline: none; line-height: 1.7; }
-.rich-editor img { max-width: 100%; border-radius: 8px; }
+.rich-editor figure { margin: 12px 0; }
+.rich-editor img { display: block; max-width: 100%; height: auto; border-radius: 8px; }
 .rich-editor figcaption { color: #6b7280; font-size: 12px; text-align: center; }
 .bottom-nav { position: fixed; z-index: 30; left: 50%; bottom: 0; display: grid; width: min(520px,100%); transform: translateX(-50%); grid-template-columns: repeat(5,1fr); border-top: 1px solid #d8dee9; background: rgba(255,255,255,.96); backdrop-filter: blur(10px); }
 .bottom-nav button { height: 58px; border: 0; background: transparent; color: #64748b; font-size: 12px; }
@@ -47,5 +49,14 @@ button { cursor: pointer; }
 .qr-box { display: grid; place-items: center; min-height: 260px; border-radius: 12px; background: #fff; }
 .qr-box img, .qr-box canvas { width: 220px; height: 220px; image-rendering: pixelated; }
 .preview-frame { display: block; width: 100%; min-height: 42px; border-radius: 10px; border: 1px solid #d8dee9; background: #fff; padding: 10px; color: #2563eb; text-decoration: none; word-break: break-all; }
-.cover-preview { width: 84px; height: 84px; object-fit: cover; border-radius: 12px; background: #e5e7eb; }
+.cover-preview { width: 100%; height: 104px; object-fit: contain; padding: 4px; border: 1px solid #d8dee9; border-radius: 12px; background: #fff; }
 .empty { padding: 24px 0; color: #6b7280; text-align: center; }
+.login-page { background: #eef2f7; }
+.login-shell { display: grid; min-height: 100vh; place-items: center; padding: 22px; }
+.login-panel { width: min(420px,100%); padding: 22px; border-radius: 14px; background: #fff; box-shadow: 0 18px 44px rgba(15,23,42,.12); }
+.login-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+.login-heading h1 { margin: 0; font-size: 20px; }
+.login-heading p { margin: 4px 0 0; color: #64748b; font-size: 13px; }
+.login-mark { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 12px; background: #2563eb; color: #fff; font-weight: 900; }
+.login-error { min-height: 22px; margin: -2px 0 10px; color: #dc2626; font-size: 13px; }
+.login-tip { margin: 12px 0 0; color: #64748b; font-size: 12px; text-align: center; }

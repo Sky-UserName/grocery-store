@@ -29,7 +29,7 @@ function getCurrentMobilePage() {
     }
 })();
 
-const API_BASE_URL = window.API_BASE_URL || "http://localhost:5088";
+const API_BASE_URL = window.API_BASE_URL || "http://localhost:5083";
 
 const mobileStore = {
     get token() {

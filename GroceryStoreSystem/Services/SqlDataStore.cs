@@ -1,6 +1,5 @@
 using GroceryStoreSystem.Models;
-using Microsoft.Data.SqlClient;
-using System.Data;
+using MySqlConnector;
 
 namespace GroceryStoreSystem.Services;
 
@@ -16,9 +15,10 @@ public sealed class SqlDataStore(IConfiguration configuration)
         await using var connection = await OpenConnectionAsync();
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT TOP 1 Id, Username, PasswordHash, PasswordSalt, Status, LastLoginAt
+            SELECT Id, Username, PasswordHash, PasswordSalt, Status, LastLoginAt
             FROM AdminUsers
             WHERE Username = @Username
+            LIMIT 1
             """;
         Add(command, "@Username", username);
 
@@ -41,7 +41,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
 
     public async Task TouchAdminLoginAsync(long id)
     {
-        await ExecuteAsync("UPDATE AdminUsers SET LastLoginAt = SYSUTCDATETIME(), UpdatedAt = SYSUTCDATETIME() WHERE Id = @Id",
+        await ExecuteAsync("UPDATE AdminUsers SET LastLoginAt = UTC_TIMESTAMP(), UpdatedAt = UTC_TIMESTAMP() WHERE Id = @Id",
             ("@Id", id));
     }
 
@@ -49,7 +49,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
     {
         await ExecuteAsync("""
             UPDATE AdminUsers
-            SET PasswordHash = @Hash, PasswordSalt = @Salt, UpdatedAt = SYSUTCDATETIME()
+            SET PasswordHash = @Hash, PasswordSalt = @Salt, UpdatedAt = UTC_TIMESTAMP()
             WHERE Id = @Id
             """, ("@Id", id), ("@Hash", hash), ("@Salt", salt));
     }
@@ -59,10 +59,11 @@ public sealed class SqlDataStore(IConfiguration configuration)
         await using var connection = await OpenConnectionAsync();
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT TOP 1 Id, SiteName, SiteSubtitle, SiteDescription,
+            SELECT Id, SiteName, SiteSubtitle, SiteDescription,
                    AccessPasswordHash, AccessPasswordSalt, AccessPasswordEnabled, UpdatedAt
             FROM SiteConfig
             WHERE Id = 1
+            LIMIT 1
             """;
 
         await using var reader = await command.ExecuteReaderAsync();
@@ -102,7 +103,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
                 AccessPasswordHash = @Hash,
                 AccessPasswordSalt = @Salt,
                 AccessPasswordEnabled = @Enabled,
-                UpdatedAt = SYSUTCDATETIME()
+                UpdatedAt = UTC_TIMESTAMP()
             WHERE Id = 1
             """,
             ("@SiteName", config.SiteName),
@@ -156,7 +157,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
         {
             await ExecuteAsync("""
                 INSERT INTO Categories (Name, Slug, Icon, SortOrder, IsEnabled, CreatedAt, UpdatedAt)
-                VALUES (@Name, @Slug, @Icon, @SortOrder, @IsEnabled, SYSUTCDATETIME(), SYSUTCDATETIME())
+                VALUES (@Name, @Slug, @Icon, @SortOrder, @IsEnabled, UTC_TIMESTAMP(), UTC_TIMESTAMP())
                 """,
                 ("@Name", category.Name),
                 ("@Slug", category.Slug),
@@ -173,7 +174,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
                 Icon = @Icon,
                 SortOrder = @SortOrder,
                 IsEnabled = @IsEnabled,
-                UpdatedAt = SYSUTCDATETIME()
+                UpdatedAt = UTC_TIMESTAMP()
             WHERE Id = @Id
             """,
             ("@Id", category.Id),
@@ -216,8 +217,8 @@ public sealed class SqlDataStore(IConfiguration configuration)
         if (tag.Id == 0)
         {
             await ExecuteAsync("""
-                IF NOT EXISTS (SELECT 1 FROM Tags WHERE Name = @Name)
-                INSERT INTO Tags (Name, Color, CreatedAt) VALUES (@Name, @Color, SYSUTCDATETIME())
+                INSERT IGNORE INTO Tags (Name, Color, CreatedAt)
+                VALUES (@Name, @Color, UTC_TIMESTAMP())
                 """, ("@Name", tag.Name), ("@Color", tag.Color));
             return;
         }
@@ -228,7 +229,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
 
     public async Task DeleteTagAsync(long id)
     {
-        await ExecuteAsync("DELETE FROM CardTags WHERE TagId = @Id; DELETE FROM Tags WHERE Id = @Id", ("@Id", id));
+        await ExecuteAsync("DELETE FROM Tags WHERE Id = @Id", ("@Id", id));
     }
 
     public async Task<IReadOnlyList<CardListItem>> GetCardsAsync(long? categoryId = null, int? status = null, string? keyword = null, bool mobileOnly = false)
@@ -239,7 +240,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
         command.CommandText = """
             SELECT c.Id, c.CategoryId, cat.Name AS CategoryName, c.Title, c.Summary, c.CoverImageUrl,
                    c.Status, c.SortOrder,
-                   COALESCE(STRING_AGG(t.Name, N','), N'') AS Tags,
+                   COALESCE(GROUP_CONCAT(t.Name ORDER BY t.Name SEPARATOR ','), '') AS Tags,
                    c.PublishedAt, c.UpdatedAt
             FROM Cards c
             INNER JOIN Categories cat ON cat.Id = c.CategoryId
@@ -336,12 +337,11 @@ public sealed class SqlDataStore(IConfiguration configuration)
             if (card.Id == 0)
             {
                 await using var insert = connection.CreateCommand();
-                insert.Transaction = (SqlTransaction)transaction;
+                insert.Transaction = transaction;
                 insert.CommandText = """
                     INSERT INTO Cards (CategoryId, Title, Summary, CoverImageUrl, ContentHtml, Status, SortOrder, PublishedAt, CreatedAt, UpdatedAt)
-                    OUTPUT INSERTED.Id
                     VALUES (@CategoryId, @Title, @Summary, @CoverImageUrl, @ContentHtml, @Status, @SortOrder,
-                            CASE WHEN @Status = 1 THEN SYSUTCDATETIME() ELSE NULL END, SYSUTCDATETIME(), SYSUTCDATETIME())
+                            CASE WHEN @Status = 1 THEN UTC_TIMESTAMP() ELSE NULL END, UTC_TIMESTAMP(), UTC_TIMESTAMP())
                     """;
                 Add(insert, "@CategoryId", card.CategoryId);
                 Add(insert, "@Title", card.Title);
@@ -350,12 +350,13 @@ public sealed class SqlDataStore(IConfiguration configuration)
                 Add(insert, "@ContentHtml", card.ContentHtml);
                 Add(insert, "@Status", card.Status);
                 Add(insert, "@SortOrder", card.SortOrder);
-                card.Id = Convert.ToInt64(await insert.ExecuteScalarAsync());
+                await insert.ExecuteNonQueryAsync();
+                card.Id = insert.LastInsertedId;
             }
             else
             {
                 await using var update = connection.CreateCommand();
-                update.Transaction = (SqlTransaction)transaction;
+                update.Transaction = transaction;
                 update.CommandText = """
                     UPDATE Cards
                     SET CategoryId = @CategoryId,
@@ -365,8 +366,8 @@ public sealed class SqlDataStore(IConfiguration configuration)
                         ContentHtml = @ContentHtml,
                         Status = @Status,
                         SortOrder = @SortOrder,
-                        PublishedAt = CASE WHEN @Status = 1 AND PublishedAt IS NULL THEN SYSUTCDATETIME() ELSE PublishedAt END,
-                        UpdatedAt = SYSUTCDATETIME()
+                        PublishedAt = CASE WHEN @Status = 1 AND PublishedAt IS NULL THEN UTC_TIMESTAMP() ELSE PublishedAt END,
+                        UpdatedAt = UTC_TIMESTAMP()
                     WHERE Id = @Id
                     """;
                 Add(update, "@Id", card.Id);
@@ -380,7 +381,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
                 await update.ExecuteNonQueryAsync();
             }
 
-            await SaveCardTagsAsync(connection, (SqlTransaction)transaction, card.Id, card.Tags.Select(t => t.Name));
+            await SaveCardTagsAsync(connection, transaction, card.Id, card.Tags.Select(t => t.Name));
             await transaction.CommitAsync();
             return card.Id;
         }
@@ -393,7 +394,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
 
     public async Task DeleteCardAsync(long id)
     {
-        await ExecuteAsync("DELETE FROM CardTags WHERE CardId = @Id; DELETE FROM Cards WHERE Id = @Id", ("@Id", id));
+        await ExecuteAsync("DELETE FROM Cards WHERE Id = @Id", ("@Id", id));
     }
 
     public async Task SetCardStatusAsync(long id, int status)
@@ -401,8 +402,8 @@ public sealed class SqlDataStore(IConfiguration configuration)
         await ExecuteAsync("""
             UPDATE Cards
             SET Status = @Status,
-                PublishedAt = CASE WHEN @Status = 1 AND PublishedAt IS NULL THEN SYSUTCDATETIME() ELSE PublishedAt END,
-                UpdatedAt = SYSUTCDATETIME()
+                PublishedAt = CASE WHEN @Status = 1 AND PublishedAt IS NULL THEN UTC_TIMESTAMP() ELSE PublishedAt END,
+                UpdatedAt = UTC_TIMESTAMP()
             WHERE Id = @Id
             """, ("@Id", id), ("@Status", status));
     }
@@ -411,7 +412,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
     {
         await ExecuteAsync("""
             INSERT INTO UploadFiles (OriginalName, FileName, FileUrl, FileSize, MimeType, UsageType, CreatedAt)
-            VALUES (@OriginalName, @FileName, @FileUrl, @FileSize, @MimeType, @UsageType, SYSUTCDATETIME())
+            VALUES (@OriginalName, @FileName, @FileUrl, @FileSize, @MimeType, @UsageType, UTC_TIMESTAMP())
             """,
             ("@OriginalName", file.OriginalName),
             ("@FileName", file.FileName),
@@ -437,9 +438,9 @@ public sealed class SqlDataStore(IConfiguration configuration)
         await reader.ReadAsync();
         return new DashboardStats
         {
-            CategoryCount = reader.GetInt32(0),
-            CardCount = reader.GetInt32(1),
-            PublishedCount = reader.GetInt32(2),
+            CategoryCount = Convert.ToInt32(reader.GetValue(0)),
+            CardCount = Convert.ToInt32(reader.GetValue(1)),
+            PublishedCount = Convert.ToInt32(reader.GetValue(2)),
             LastUpdatedAt = reader.IsDBNull(3) ? null : reader.GetDateTime(3)
         };
     }
@@ -450,9 +451,9 @@ public sealed class SqlDataStore(IConfiguration configuration)
         return Convert.ToInt32(value);
     }
 
-    public async Task<SqlConnection> OpenConnectionAsync()
+    public async Task<MySqlConnection> OpenConnectionAsync()
     {
-        var connection = new SqlConnection(_connectionString);
+        var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
         return connection;
     }
@@ -483,7 +484,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
         return await command.ExecuteScalarAsync();
     }
 
-    private static async Task<List<Tag>> GetCardTagsAsync(SqlConnection connection, long cardId)
+    private static async Task<List<Tag>> GetCardTagsAsync(MySqlConnection connection, long cardId)
     {
         var items = new List<Tag>();
         await using var command = connection.CreateCommand();
@@ -511,7 +512,7 @@ public sealed class SqlDataStore(IConfiguration configuration)
         return items;
     }
 
-    private static async Task SaveCardTagsAsync(SqlConnection connection, SqlTransaction transaction, long cardId, IEnumerable<string> tagNames)
+    private static async Task SaveCardTagsAsync(MySqlConnection connection, MySqlTransaction transaction, long cardId, IEnumerable<string> tagNames)
     {
         await using var delete = connection.CreateCommand();
         delete.Transaction = transaction;
@@ -524,12 +525,17 @@ public sealed class SqlDataStore(IConfiguration configuration)
             await using var ensure = connection.CreateCommand();
             ensure.Transaction = transaction;
             ensure.CommandText = """
-                IF NOT EXISTS (SELECT 1 FROM Tags WHERE Name = @Name)
-                    INSERT INTO Tags (Name, Color, CreatedAt) VALUES (@Name, NULL, SYSUTCDATETIME());
-                SELECT Id FROM Tags WHERE Name = @Name;
+                INSERT IGNORE INTO Tags (Name, Color, CreatedAt)
+                VALUES (@Name, NULL, UTC_TIMESTAMP())
                 """;
             Add(ensure, "@Name", rawName);
-            var tagId = Convert.ToInt64(await ensure.ExecuteScalarAsync());
+            await ensure.ExecuteNonQueryAsync();
+
+            await using var select = connection.CreateCommand();
+            select.Transaction = transaction;
+            select.CommandText = "SELECT Id FROM Tags WHERE Name = @Name";
+            Add(select, "@Name", rawName);
+            var tagId = Convert.ToInt64(await select.ExecuteScalarAsync());
 
             await using var link = connection.CreateCommand();
             link.Transaction = transaction;
@@ -540,8 +546,8 @@ public sealed class SqlDataStore(IConfiguration configuration)
         }
     }
 
-    private static void Add(SqlCommand command, string name, object? value)
+    private static void Add(MySqlCommand command, string name, object? value)
     {
-        command.Parameters.Add(new SqlParameter(name, value ?? DBNull.Value));
+        command.Parameters.Add(new MySqlParameter(name, value ?? DBNull.Value));
     }
 }

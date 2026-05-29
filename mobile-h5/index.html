@@ -17,6 +17,10 @@
     </main>
     <script src="js/mobile.js"></script>
     <script>
+        // 登录状态检查：未登录则跳转
+        if (!window.__WECHAT_BROWSER_GUIDE_ACTIVE__ && !mobileStore.token) {
+            location.href = "login.html";
+        }
         if (!window.__WECHAT_BROWSER_GUIDE_ACTIVE__) {
         let active = "";
         let categories = [];
